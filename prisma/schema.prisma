@@ -1,0 +1,56 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Application {
+  id              String         @id @default(cuid())
+  company         String
+  role            String
+  status          String
+  appliedAt       DateTime       @default(now())
+  notes           String?
+  contactId       String?
+  resumeVersionId String?
+  contact         Contact?       @relation(fields: [contactId], references: [id])
+  resumeVersion   ResumeVersion? @relation(fields: [resumeVersionId], references: [id])
+  events          Event[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model Contact {
+  id           String        @id @default(cuid())
+  name         String
+  email        String?
+  company      String?
+  title        String?
+  applications Application[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Event {
+  id            String      @id @default(cuid())
+  type          String
+  eventAt       DateTime
+  notes         String?
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model ResumeVersion {
+  id           String        @id @default(cuid())
+  title        String
+  summary      String?
+  content      String?
+  applications Application[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
