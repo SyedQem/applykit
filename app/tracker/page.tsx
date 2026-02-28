@@ -21,6 +21,11 @@ const statusLabel: Record<string, string> = {
 function toStatusKey(status: string) {
   return status.trim().toUpperCase().replaceAll(" ", "_");
 }
+const appliedDateFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+});
 
 export default async function TrackerPage() {
   const applications = await prisma.application.findMany({
@@ -55,6 +60,21 @@ export default async function TrackerPage() {
             </Card>
           );
         })}
+      <div className="grid gap-4 md:grid-cols-2">
+        {applications.map((app) => (
+          <Card key={app.id}>
+            <CardContent className="pt-6 space-y-1">
+              <h3 className="font-semibold">
+                {app.role} @ {app.company}
+              </h3>
+              <p className="text-sm text-slate-600">
+                Applied on {appliedDateFormatter.format(app.appliedAt)} for {app.role} @ {app.company}
+              </p>
+              <p className="text-sm text-slate-600">Status: {app.status}</p>
+              <p className="text-sm text-slate-600">Events: {app.events.length}</p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
     </div>
   );
