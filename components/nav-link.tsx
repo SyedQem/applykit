@@ -1,15 +1,16 @@
 "use client";
 
 import Link from "next/link";
+import type { Route } from "next";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 type NavLinkProps = {
-  href: string;
+  href: Route;
   label: string;
 };
 
-function isActivePath(pathname: string, href: string) {
+function isActivePath(pathname: string, href: Route) {
   if (href === "/") {
     return pathname === href;
   }
