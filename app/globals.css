@@ -9,3 +9,17 @@
 body {
   @apply bg-slate-50 text-slate-900;
 }
+
+@layer components {
+  .surface-primary {
+    @apply rounded-xl border border-slate-200/80 bg-white/90 shadow-sm;
+  }
+
+  .surface-hover {
+    @apply transition duration-200 hover:-translate-y-0.5 hover:shadow-md;
+  }
+
+  .status-chip {
+    @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium;
+  }
+}
