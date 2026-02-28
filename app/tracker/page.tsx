@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent } from "@/components/ui/card";
-import { NewApplicationDialog } from "@/components/new-application-dialog";
+import { NewApplicationForm } from "@/components/new-application-form";
 
 export default async function TrackerPage() {
   const applications = await prisma.application.findMany({
@@ -12,7 +12,7 @@ export default async function TrackerPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-semibold">Application Tracker</h2>
-        <NewApplicationDialog />
+        <NewApplicationForm />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">

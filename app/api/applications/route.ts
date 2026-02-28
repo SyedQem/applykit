@@ -7,22 +7,27 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const body = await request.json();
-  const application = await prisma.application.create({
-    data: {
-      company: body.company,
-      role: body.role,
-      status: body.status ?? "APPLIED",
-      appliedAt: body.appliedAt ? new Date(body.appliedAt) : new Date(),
-      notes: body.notes,
-      contactId: body.contactId,
-      resumeVersionId: body.resumeVersionId
+  try {
+    const body = await request.json();
+
+    if (!body.company || !body.role) {
+      return NextResponse.json({ error: "company and role are required" }, { status: 400 });
     }
-  });
 
-  if (!body.company || !body.role) {
-    return NextResponse.json({ error: "company and role are required" }, { status: 400 })
+    const application = await prisma.application.create({
+      data: {
+        company: body.company,
+        role: body.role,
+        status: body.status ?? "APPLIED",
+        appliedAt: body.appliedAt ? new Date(body.appliedAt) : new Date(),
+        notes: body.notes,
+        contactId: body.contactId,
+        resumeVersionId: body.resumeVersionId,
+      },
+    });
+
+    return NextResponse.json(application, { status: 201 });
+  } catch {
+    return NextResponse.json({ error: "Failed to create application" }, { status: 500 });
   }
-
-  return NextResponse.json(application, { status: 201 });
 }

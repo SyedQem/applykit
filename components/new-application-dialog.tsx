@@ -71,8 +71,8 @@ export function NewApplicationDialog() {
       setOpen(false)
       form.reset()
       router.refresh()
-    } catch (e: any) {
-      setError(e?.message ?? "Something broke")
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : "Something broke")
     } finally {
       setSubmitting(false)
     }
