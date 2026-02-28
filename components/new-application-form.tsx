@@ -137,13 +137,14 @@ export function NewApplicationForm() {
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="appliedAt">Applied At (optional)</Label>
+            <Label htmlFor="appliedAt">Applied on (optional)</Label>
             <Input
               id="appliedAt"
               type="date"
               value={formState.appliedAt}
               onChange={(event) => updateField("appliedAt", event.target.value)}
             />
+            <p className="text-sm text-slate-500">Date you submitted the application.</p>
           </div>
 
           <div className="grid gap-2">
