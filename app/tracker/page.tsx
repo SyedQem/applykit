@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent } from "@/components/ui/card";
-import { NewApplicationForm } from "@/components/new-application-form";
+import { NewApplicationDialog } from "@/components/new-application-dialog";
 
 const statusStyles: Record<string, string> = {
   APPLIED: "bg-blue-100 text-blue-700",
@@ -21,11 +21,6 @@ const statusLabel: Record<string, string> = {
 function toStatusKey(status: string) {
   return status.trim().toUpperCase().replaceAll(" ", "_");
 }
-const appliedDateFormatter = new Intl.DateTimeFormat("en-US", {
-  month: "short",
-  day: "numeric",
-  year: "numeric",
-});
 
 export default async function TrackerPage() {
   const applications = await prisma.application.findMany({
@@ -37,7 +32,7 @@ export default async function TrackerPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <h2 className="text-2xl font-semibold">Application Tracker</h2>
-        <NewApplicationForm />
+        <NewApplicationDialog />
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -60,21 +55,6 @@ export default async function TrackerPage() {
             </Card>
           );
         })}
-      <div className="grid gap-4 md:grid-cols-2">
-        {applications.map((app) => (
-          <Card key={app.id}>
-            <CardContent className="pt-6 space-y-1">
-              <h3 className="font-semibold">
-                {app.role} @ {app.company}
-              </h3>
-              <p className="text-sm text-slate-600">
-                Applied on {appliedDateFormatter.format(app.appliedAt)} for {app.role} @ {app.company}
-              </p>
-              <p className="text-sm text-slate-600">Status: {app.status}</p>
-              <p className="text-sm text-slate-600">Events: {app.events.length}</p>
-            </CardContent>
-          </Card>
-        ))}
       </div>
     </div>
   );
