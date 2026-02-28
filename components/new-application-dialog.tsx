@@ -55,6 +55,7 @@ export function NewApplicationDialog() {
   async function onSubmit(values: FormValues) {
     setSubmitting(true)
     setError(null)
+    form.clearErrors()
 
     try {
       const res = await fetch("/api/applications", {
@@ -64,15 +65,65 @@ export function NewApplicationDialog() {
       })
 
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        throw new Error(data?.error ?? "Failed to create application")
+        const data: unknown = await res.json().catch(() => ({}))
+        const nonFieldMessages: string[] = []
+
+        if (data && typeof data === "object") {
+          const errors = Reflect.get(data, "errors")
+
+          if (errors && typeof errors === "object") {
+            for (const [field, rawMessage] of Object.entries(errors)) {
+              const message =
+                typeof rawMessage === "string"
+                  ? rawMessage
+                  : Array.isArray(rawMessage)
+                    ? rawMessage.find((item) => typeof item === "string")
+                    : null
+
+              if (!message) continue
+
+              if (field in values) {
+                form.setError(field as keyof FormValues, {
+                  type: "server",
+                  message,
+                })
+                continue
+              }
+
+              nonFieldMessages.push(message)
+            }
+          }
+
+          const messages = Reflect.get(data, "messages")
+          if (Array.isArray(messages)) {
+            nonFieldMessages.push(
+              ...messages.filter(
+                (message): message is string => typeof message === "string"
+              )
+            )
+          }
+        }
+
+        const fallbackMessage = "Failed to create application"
+        const errorMessage =
+          nonFieldMessages.join(" ") ||
+          (data && typeof data === "object" && typeof Reflect.get(data, "error") === "string"
+            ? (Reflect.get(data, "error") as string)
+            : fallbackMessage)
+
+        setError(errorMessage)
+        return
       }
 
       setOpen(false)
       form.reset()
       router.refresh()
-    } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "Something broke")
+    } catch (submitError: unknown) {
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : "Failed to create application"
+      )
     } finally {
       setSubmitting(false)
     }
