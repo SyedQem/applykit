@@ -18,12 +18,22 @@ export default async function TrackerPage() {
       <div className="grid gap-4 md:grid-cols-2">
         {applications.map((app) => (
           <Card key={app.id}>
-            <CardContent className="pt-6 space-y-1">
-              <h3 className="font-semibold">
-                {app.role} @ {app.company}
-              </h3>
-              <p className="text-sm text-slate-600">Status: {app.status}</p>
-              <p className="text-sm text-slate-600">Events: {app.events.length}</p>
+            <CardContent className="space-y-2 pt-6">
+              <div>
+                <h3 className="text-base font-semibold text-slate-900">{app.company}</h3>
+                <p className="text-sm text-slate-700">{app.role}</p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                <span className="rounded-full bg-slate-100 px-2 py-0.5">Status: {app.status}</span>
+                <span className="rounded-full bg-slate-100 px-2 py-0.5">Events: {app.events.length}</span>
+              </div>
+
+              {app.appliedAt ? (
+                <p className="text-xs text-slate-500">
+                  Applied on {new Date(app.appliedAt).toLocaleDateString()}
+                </p>
+              ) : null}
             </CardContent>
           </Card>
         ))}
