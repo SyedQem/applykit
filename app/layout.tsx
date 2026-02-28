@@ -50,6 +50,9 @@ export default function RootLayout({
               <section className="flex-1 p-6">{children}</section>
               <RightDrawer />
             </main>
+            <footer className="border-t bg-white px-6 py-3 text-xs text-slate-500">
+              <p>Qurb E Muhammad Syed · Built with Next.js · Ottawa, 🇨🇦</p>
+            </footer>
           </div>
         </div>
       </body>
