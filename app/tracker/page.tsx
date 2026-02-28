@@ -1,21 +1,30 @@
 import { prisma } from "@/lib/prisma";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { NewApplicationDialog } from "@/components/new-application-dialog";
 
 export default async function TrackerPage() {
   const applications = await prisma.application.findMany({
     orderBy: { appliedAt: "desc" },
-    include: { events: true }
+    include: { events: true },
   });
 
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-semibold">Application Tracker</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-semibold">Application Tracker</h2>
+        <NewApplicationDialog />
+      </div>
+
       <div className="grid gap-4 md:grid-cols-2">
         {applications.map((app) => (
           <Card key={app.id}>
-            <h3 className="font-semibold">{app.role} @ {app.company}</h3>
-            <p className="text-sm text-slate-600">Status: {app.status}</p>
-            <p className="text-sm text-slate-600">Events: {app.events.length}</p>
+            <CardContent className="pt-6 space-y-1">
+              <h3 className="font-semibold">
+                {app.role} @ {app.company}
+              </h3>
+              <p className="text-sm text-slate-600">Status: {app.status}</p>
+              <p className="text-sm text-slate-600">Events: {app.events.length}</p>
+            </CardContent>
           </Card>
         ))}
       </div>

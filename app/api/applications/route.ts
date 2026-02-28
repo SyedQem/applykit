@@ -12,13 +12,17 @@ export async function POST(request: Request) {
     data: {
       company: body.company,
       role: body.role,
-      status: body.status ?? "Applied",
+      status: body.status ?? "APPLIED",
       appliedAt: body.appliedAt ? new Date(body.appliedAt) : new Date(),
       notes: body.notes,
       contactId: body.contactId,
       resumeVersionId: body.resumeVersionId
     }
   });
+
+  if (!body.company || !body.role) {
+    return NextResponse.json({ error: "company and role are required" }, { status: 400 })
+  }
 
   return NextResponse.json(application, { status: 201 });
 }
