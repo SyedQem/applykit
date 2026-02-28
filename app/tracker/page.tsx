@@ -8,6 +8,8 @@ const statusStyles: Record<string, string> = {
   INTERVIEWING: "bg-amber-100 text-amber-700",
   OFFER: "bg-emerald-100 text-emerald-700",
   REJECTED: "bg-rose-100 text-rose-700",
+  WISHLIST: "bg-slate-100 text-slate-700",
+  OA: "bg-violet-100 text-violet-700",
 };
 
 const statusLabel: Record<string, string> = {
@@ -16,11 +18,14 @@ const statusLabel: Record<string, string> = {
   INTERVIEWING: "Interviewing",
   OFFER: "Offer",
   REJECTED: "Rejected",
+  WISHLIST: "Wishlist",
+  OA: "OA",
 };
 
 function toStatusKey(status: string) {
   return status.trim().toUpperCase().replaceAll(" ", "_");
 }
+
 const appliedDateFormatter = new Intl.DateTimeFormat("en-US", {
   month: "short",
   day: "numeric",
@@ -30,7 +35,7 @@ const appliedDateFormatter = new Intl.DateTimeFormat("en-US", {
 export default async function TrackerPage() {
   const applications = await prisma.application.findMany({
     orderBy: { appliedAt: "desc" },
-    include: { events: true }
+    include: { events: true },
   });
 
   return (
@@ -47,34 +52,32 @@ export default async function TrackerPage() {
           return (
             <Card key={app.id} className="surface-primary surface-hover rounded-2xl">
               <CardContent className="space-y-4 p-6">
-                <h3 className="font-semibold text-slate-900">
-                  {app.role} @ {app.company}
-                </h3>
+                <div className="space-y-1">
+                  <h3 className="font-semibold text-slate-900">
+                    {app.role} @ {app.company}
+                  </h3>
+                  {app.appliedAt ? (
+                    <p className="text-sm text-slate-600">
+                      Applied on {appliedDateFormatter.format(app.appliedAt)}
+                    </p>
+                  ) : null}
+                </div>
+
                 <div className="flex items-center justify-between gap-4">
-                  <span className={`status-chip ${statusStyles[statusKey] ?? "bg-slate-100 text-slate-700"}`}>
+                  <span
+                    className={`status-chip ${
+                      statusStyles[statusKey] ?? "bg-slate-100 text-slate-700"
+                    }`}
+                  >
                     {statusLabel[statusKey] ?? app.status}
                   </span>
+
                   <p className="text-sm text-slate-600">Events: {app.events.length}</p>
                 </div>
               </CardContent>
             </Card>
           );
         })}
-      <div className="grid gap-4 md:grid-cols-2">
-        {applications.map((app) => (
-          <Card key={app.id}>
-            <CardContent className="pt-6 space-y-1">
-              <h3 className="font-semibold">
-                {app.role} @ {app.company}
-              </h3>
-              <p className="text-sm text-slate-600">
-                Applied on {appliedDateFormatter.format(app.appliedAt)} for {app.role} @ {app.company}
-              </p>
-              <p className="text-sm text-slate-600">Status: {app.status}</p>
-              <p className="text-sm text-slate-600">Events: {app.events.length}</p>
-            </CardContent>
-          </Card>
-        ))}
       </div>
     </div>
   );
