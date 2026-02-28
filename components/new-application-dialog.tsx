@@ -36,6 +36,11 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>
 
+type CreateApplicationError = {
+  error?: string
+  fieldErrors?: Record<string, string[]>
+}
+
 export function NewApplicationDialog() {
   const router = useRouter()
   const [open, setOpen] = React.useState(false)
@@ -55,6 +60,7 @@ export function NewApplicationDialog() {
   async function onSubmit(values: FormValues) {
     setSubmitting(true)
     setError(null)
+    form.clearErrors()
 
     try {
       const res = await fetch("/api/applications", {
@@ -64,15 +70,32 @@ export function NewApplicationDialog() {
       })
 
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
+        const data: CreateApplicationError = await res.json().catch(() => ({}))
+
+        if (data.fieldErrors) {
+          for (const [field, messages] of Object.entries(data.fieldErrors)) {
+            if (field === "company" || field === "role" || field === "status" || field === "notes") {
+              form.setError(field, { type: "server", message: messages.join(" ") })
+            }
+          }
+
+          const nonFieldMessages = Object.entries(data.fieldErrors)
+            .filter(([field]) => field !== "company" && field !== "role" && field !== "status" && field !== "notes")
+            .flatMap(([, messages]) => messages)
+
+          if (nonFieldMessages.length > 0) {
+            setError(nonFieldMessages.join(" "))
+          }
+        }
+
         throw new Error(data?.error ?? "Failed to create application")
       }
 
       setOpen(false)
       form.reset()
       router.refresh()
-    } catch (e: any) {
-      setError(e?.message ?? "Something broke")
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Something broke")
     } finally {
       setSubmitting(false)
     }
@@ -131,11 +154,21 @@ export function NewApplicationDialog() {
                 <SelectItem value="REJECTED">Rejected</SelectItem>
               </SelectContent>
             </Select>
+            {form.formState.errors.status?.message && (
+              <p className="text-sm text-red-500">
+                {form.formState.errors.status.message}
+              </p>
+            )}
           </div>
 
           <div className="grid gap-2">
             <Label htmlFor="notes">Notes (optional)</Label>
             <Textarea id="notes" rows={4} {...form.register("notes")} />
+            {form.formState.errors.notes?.message && (
+              <p className="text-sm text-red-500">
+                {form.formState.errors.notes.message}
+              </p>
+            )}
           </div>
 
           {error && <p className="text-sm text-red-500">{error}</p>}
