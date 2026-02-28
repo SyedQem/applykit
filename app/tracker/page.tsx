@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent } from "@/components/ui/card";
-import { NewApplicationForm } from "@/components/new-application-form";
+import { NewApplicationDialog } from "@/components/new-application-dialog";
 
 const statusStyles: Record<string, string> = {
   APPLIED: "bg-blue-100 text-blue-700",
@@ -26,12 +26,6 @@ function toStatusKey(status: string) {
   return status.trim().toUpperCase().replaceAll(" ", "_");
 }
 
-const appliedDateFormatter = new Intl.DateTimeFormat("en-US", {
-  month: "short",
-  day: "numeric",
-  year: "numeric",
-});
-
 export default async function TrackerPage() {
   const applications = await prisma.application.findMany({
     orderBy: { appliedAt: "desc" },
@@ -42,7 +36,7 @@ export default async function TrackerPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <h2 className="text-2xl font-semibold">Application Tracker</h2>
-        <NewApplicationForm />
+        <NewApplicationDialog />
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
