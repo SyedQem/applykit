@@ -2,6 +2,12 @@ import { prisma } from "@/lib/prisma";
 import { Card, CardContent } from "@/components/ui/card";
 import { NewApplicationForm } from "@/components/new-application-form";
 
+const appliedDateFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+});
+
 export default async function TrackerPage() {
   const applications = await prisma.application.findMany({
     orderBy: { appliedAt: "desc" },
@@ -22,6 +28,9 @@ export default async function TrackerPage() {
               <h3 className="font-semibold">
                 {app.role} @ {app.company}
               </h3>
+              <p className="text-sm text-slate-600">
+                Applied on {appliedDateFormatter.format(app.appliedAt)} for {app.role} @ {app.company}
+              </p>
               <p className="text-sm text-slate-600">Status: {app.status}</p>
               <p className="text-sm text-slate-600">Events: {app.events.length}</p>
             </CardContent>
