@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 const navItems = [
   { href: "/tracker", label: "Tracker" },
   { href: "/resume", label: "Resume" }
-];
+] as const;
 
 export default function RootLayout({
   children
