@@ -9,26 +9,62 @@ export async function GET(_: Request, { params }: Params) {
   const { id } = await params;
   const application = await prisma.application.findUnique({
     where: { id },
-    include: { events: true, contact: true }
+    include: { events: true, contact: true },
   });
-  if (!application) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  if (!application) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
   return NextResponse.json(application);
 }
 
-export async function PUT(request: Request, { params }: Params) {
+export async function PATCH(request: Request, { params }: Params) {
   const { id } = await params;
   const body = await request.json();
-  const application = await prisma.application.update({
+
+  const current = await prisma.application.findUnique({ where: { id } });
+
+  if (!current) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  const statusChanged =
+    typeof body.status === "string" && body.status.trim() && body.status !== current.status;
+
+  const updated = await prisma.application.update({
     where: { id },
     data: {
-      company: body.company,
-      role: body.role,
-      status: body.status,
-      notes: body.notes
-    }
+      status: typeof body.status === "string" ? body.status : undefined,
+      notes: typeof body.notes === "string" ? body.notes : body.notes === null ? null : undefined,
+      link: typeof body.link === "string" ? body.link : body.link === null ? null : undefined,
+      appliedAt: body.appliedAt ? new Date(body.appliedAt) : undefined,
+    },
+    include: { events: true },
   });
 
-  return NextResponse.json(application);
+  if (statusChanged) {
+    await prisma.event.create({
+      data: {
+        applicationId: id,
+        type: `Moved to ${body.status}`,
+        eventAt: new Date(),
+      },
+    });
+
+    const refreshed = await prisma.application.findUnique({
+      where: { id },
+      include: { events: true },
+    });
+
+    return NextResponse.json(refreshed);
+  }
+
+  return NextResponse.json(updated);
+}
+
+export async function PUT(request: Request, context: Params) {
+  return PATCH(request, context);
 }
 
 export async function DELETE(_: Request, { params }: Params) {
