@@ -90,7 +90,7 @@ function RowActionsMenu({ application, onToggleArchived }: RowActionsMenuProps) 
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild onClick={(event) => event.stopPropagation()}>
+      <DropdownMenuTrigger asChild onClick={(event: React.MouseEvent) => event.stopPropagation()}>
         <Button
           variant="ghost"
           size="icon"
@@ -101,9 +101,9 @@ function RowActionsMenu({ application, onToggleArchived }: RowActionsMenuProps) 
           <span className="sr-only">Open row actions</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" onClick={(event) => event.stopPropagation()}>
+      <DropdownMenuContent align="end" onClick={(event: React.MouseEvent) => event.stopPropagation()}>
         <DropdownMenuItem
-          onClick={(event) => {
+          onClick={(event: React.MouseEvent) => {
             event.stopPropagation();
             void onToggleArchived(application.id, nextArchivedValue);
           }}
