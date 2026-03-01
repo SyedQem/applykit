@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { Card } from "@/components/ui/card";
 
+export const dynamic = "force-dynamic";
+
 export default async function ResumePage() {
   const resumeVersions = await prisma.resumeVersion.findMany({
     orderBy: { createdAt: "desc" }

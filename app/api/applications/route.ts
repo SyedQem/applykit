@@ -21,6 +21,7 @@ export async function POST(request: Request) {
         status: body.status ?? "APPLIED",
         appliedAt: body.appliedAt ? new Date(body.appliedAt) : new Date(),
         notes: body.notes,
+        link: body.link,
         contactId: body.contactId,
         resumeVersionId: body.resumeVersionId,
       },

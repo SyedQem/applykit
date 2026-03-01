@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { RightDrawer } from "@/components/right-drawer";
 import { NavLink } from "@/components/nav-link";
 
 export const metadata: Metadata = {
@@ -42,7 +41,6 @@ export default function RootLayout({
             </header>
             <main className="flex flex-1">
               <section className="flex-1 p-6">{children}</section>
-              <RightDrawer />
             </main>
             <footer className="border-t border-slate-200/70 bg-white/70 px-6 py-2 text-xs text-slate-400">
               <p>Qurb E Muhammad Syed · Built with Next.js · Ottawa, 🇨🇦</p>
