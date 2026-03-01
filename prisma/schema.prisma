@@ -14,6 +14,7 @@ model Application {
   role            String
   status          String
   appliedAt       DateTime       @default(now())
+  archivedAt      DateTime?
   notes           String?
   link            String?
   contactId       String?

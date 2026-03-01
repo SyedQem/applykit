@@ -5,6 +5,14 @@ type Params = {
   params: Promise<{ id: string }>;
 };
 
+type ApplicationPatchBody = {
+  status?: string;
+  notes?: string | null;
+  link?: string | null;
+  appliedAt?: string | Date;
+  archived?: boolean;
+};
+
 export async function GET(_: Request, { params }: Params) {
   const { id } = await params;
   const application = await prisma.application.findUnique({
@@ -21,7 +29,7 @@ export async function GET(_: Request, { params }: Params) {
 
 export async function PATCH(request: Request, { params }: Params) {
   const { id } = await params;
-  const body = await request.json();
+  const body = (await request.json()) as ApplicationPatchBody;
 
   const current = await prisma.application.findUnique({ where: { id } });
 
@@ -39,6 +47,8 @@ export async function PATCH(request: Request, { params }: Params) {
       notes: typeof body.notes === "string" ? body.notes : body.notes === null ? null : undefined,
       link: typeof body.link === "string" ? body.link : body.link === null ? null : undefined,
       appliedAt: body.appliedAt ? new Date(body.appliedAt) : undefined,
+      archivedAt:
+        typeof body.archived === "boolean" ? (body.archived ? new Date() : null) : undefined,
     },
     include: { events: true },
   });
