@@ -41,7 +41,7 @@ type ApplicationRow = {
   status: string;
   appliedAt: string | Date;
   notes: string | null;
-  link: string | null;
+  link?: string | null;
   events: EventItem[];
 };
 
