@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ColumnDef,
   flexRender,
@@ -9,8 +9,15 @@ import {
   SortingState,
   useReactTable,
 } from "@tanstack/react-table";
+import { MoreHorizontal } from "lucide-react";
 import { RightDrawer } from "@/components/right-drawer";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -40,9 +47,14 @@ type ApplicationRow = {
   role: string;
   status: string;
   appliedAt: string | Date;
+  archivedAt?: string | Date | null;
   notes: string | null;
   link?: string | null;
   events: EventItem[];
+};
+
+type ApplicationViewRow = ApplicationRow & {
+  lastActivityAt: Date;
 };
 
 const appliedDateFormatter = new Intl.DateTimeFormat("en-CA", {
@@ -55,28 +67,98 @@ function formatDate(value: string | Date) {
   return appliedDateFormatter.format(new Date(value));
 }
 
+function getLastActivityAt(application: ApplicationRow) {
+  if (!application.events.length) {
+    return new Date(application.appliedAt);
+  }
+
+  const mostRecentEvent = application.events.reduce((latest, eventItem) => {
+    const eventDate = new Date(eventItem.eventAt);
+    return eventDate.getTime() > latest.getTime() ? eventDate : latest;
+  }, new Date(application.events[0].eventAt));
+
+  return mostRecentEvent;
+}
+
+type RowActionsMenuProps = {
+  application: ApplicationViewRow;
+  onToggleArchived: (applicationId: string, archived: boolean) => Promise<void>;
+};
+
+function RowActionsMenu({ application, onToggleArchived }: RowActionsMenuProps) {
+  const nextArchivedValue = application.archivedAt == null;
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild onClick={(event) => event.stopPropagation()}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <MoreHorizontal className="h-4 w-4" />
+          <span className="sr-only">Open row actions</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" onClick={(event) => event.stopPropagation()}>
+        <DropdownMenuItem
+          onClick={(event) => {
+            event.stopPropagation();
+            void onToggleArchived(application.id, nextArchivedValue);
+          }}
+        >
+          {application.archivedAt == null ? "Archive" : "Unarchive"}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export function ApplicationsTable({ applications }: { applications: ApplicationRow[] }) {
   const [data, setData] = useState(applications);
   const [sorting, setSorting] = useState<SortingState>([
-    { id: "appliedAt", desc: true },
+    { id: "lastActivityAt", desc: true },
   ]);
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [tabFilter, setTabFilter] = useState<"ACTIVE" | "ARCHIVED">("ACTIVE");
   const [selectedApplicationId, setSelectedApplicationId] = useState(
     applications[0]?.id ?? "",
   );
   const [isSaving, setIsSaving] = useState(false);
   const [newEvent, setNewEvent] = useState({ type: "", notes: "" });
 
-  const visibleRows = useMemo(
-    () =>
-      data.filter((application) =>
-        statusFilter === "ALL" ? true : toStatusKey(application.status) === statusFilter,
-      ),
-    [data, statusFilter],
+  const dataWithLastActivity = useMemo<ApplicationViewRow[]>(
+    () => data.map((application) => ({ ...application, lastActivityAt: getLastActivityAt(application) })),
+    [data],
   );
 
+  const visibleRows = useMemo(
+    () =>
+      dataWithLastActivity.filter((application) => {
+        const matchesTab = tabFilter === "ACTIVE" ? application.archivedAt == null : application.archivedAt != null;
+        const matchesStatus =
+          statusFilter === "ALL" ? true : toStatusKey(application.status) === statusFilter;
+
+        return matchesTab && matchesStatus;
+      }),
+    [dataWithLastActivity, statusFilter, tabFilter],
+  );
+
+  useEffect(() => {
+    if (!visibleRows.length) {
+      setSelectedApplicationId("");
+      return;
+    }
+
+    const hasSelectedVisibleRow = visibleRows.some((application) => application.id === selectedApplicationId);
+    if (!hasSelectedVisibleRow) {
+      setSelectedApplicationId(visibleRows[0].id);
+    }
+  }, [visibleRows, selectedApplicationId]);
+
   const selectedApplication =
-    data.find((application) => application.id === selectedApplicationId) ?? data[0] ?? null;
+    visibleRows.find((application) => application.id === selectedApplicationId) ?? null;
 
   async function saveApplication(
     applicationId: string,
@@ -101,6 +183,21 @@ export function ApplicationsTable({ applications }: { applications: ApplicationR
     }
   }
 
+  async function toggleArchive(applicationId: string, archived: boolean) {
+    const response = await fetch(`/api/applications/${applicationId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ archived }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to update archive status");
+    }
+
+    const updated = (await response.json()) as ApplicationRow;
+    setData((current) => current.map((item) => (item.id === updated.id ? updated : item)));
+  }
+
   async function createEvent() {
     if (!selectedApplication || !newEvent.type.trim()) return;
 
@@ -115,7 +212,7 @@ export function ApplicationsTable({ applications }: { applications: ApplicationR
     });
 
     if (!response.ok) {
-      throw new Error("Failed to create event");
+      throw new Error("Failed to create activity");
     }
 
     const created = (await response.json()) as EventItem;
@@ -128,7 +225,7 @@ export function ApplicationsTable({ applications }: { applications: ApplicationR
     setNewEvent({ type: "", notes: "" });
   }
 
-  const columns = useMemo<ColumnDef<ApplicationRow>[]>(
+  const columns = useMemo<ColumnDef<ApplicationViewRow>[]>(
     () => [
       {
         accessorKey: "company",
@@ -158,13 +255,15 @@ export function ApplicationsTable({ applications }: { applications: ApplicationR
         cell: ({ row }) => formatDate(row.original.appliedAt),
       },
       {
-        id: "eventsCount",
-        header: "Events",
-        cell: ({ row }) => row.original.events.length,
+        accessorKey: "lastActivityAt",
+        header: "Last activity",
+        sortingFn: "datetime",
+        cell: ({ row }) => formatDate(row.original.lastActivityAt),
       },
       {
         accessorKey: "link",
         header: "Link",
+        enableSorting: false,
         cell: ({ row }) =>
           row.original.link ? (
             <a
@@ -179,6 +278,12 @@ export function ApplicationsTable({ applications }: { applications: ApplicationR
           ) : (
             <span className="text-slate-400">—</span>
           ),
+      },
+      {
+        id: "actions",
+        header: "",
+        enableSorting: false,
+        cell: ({ row }) => <RowActionsMenu application={row.original} onToggleArchived={toggleArchive} />,
       },
     ],
     [],
@@ -196,7 +301,26 @@ export function ApplicationsTable({ applications }: { applications: ApplicationR
   return (
     <div className="flex gap-6">
       <div className="flex-1 space-y-4">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="inline-flex rounded-md border border-slate-200 bg-slate-50 p-1">
+            <Button
+              type="button"
+              size="sm"
+              variant={tabFilter === "ACTIVE" ? "default" : "ghost"}
+              onClick={() => setTabFilter("ACTIVE")}
+            >
+              Active
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={tabFilter === "ARCHIVED" ? "default" : "ghost"}
+              onClick={() => setTabFilter("ARCHIVED")}
+            >
+              Archived
+            </Button>
+          </div>
+
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-56">
               <SelectValue placeholder="Filter by status" />
@@ -213,44 +337,62 @@ export function ApplicationsTable({ applications }: { applications: ApplicationR
         </div>
 
         <div className="overflow-hidden rounded-xl border bg-white">
-          <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-slate-50">
-              {table.getHeaderGroups().map((headerGroup) => (
-                <tr key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <th key={header.id} className="px-4 py-3 text-left font-semibold text-slate-700">
-                      {header.isPlaceholder ? null : (
-                        <button
-                          type="button"
-                          className="inline-flex items-center gap-1"
-                          onClick={header.column.getToggleSortingHandler()}
-                        >
-                          {flexRender(header.column.columnDef.header, header.getContext())}
-                        </button>
-                      )}
-                    </th>
-                  ))}
-                </tr>
-              ))}
-            </thead>
-            <tbody className="divide-y divide-slate-200">
-              {table.getRowModel().rows.map((row) => (
-                <tr
-                  key={row.id}
-                  className={`cursor-pointer transition hover:bg-slate-50 ${
-                    row.original.id === selectedApplication?.id ? "bg-slate-100" : ""
-                  }`}
-                  onClick={() => setSelectedApplicationId(row.original.id)}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-4 py-3 text-slate-700">
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {visibleRows.length ? (
+            <table className="min-w-full divide-y divide-slate-200 text-sm">
+              <thead className="bg-slate-50">
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <tr key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                      <th key={header.id} className="px-4 py-3 text-left font-semibold text-slate-700">
+                        {header.isPlaceholder ? null : header.column.getCanSort() ? (
+                          <button
+                            type="button"
+                            className="inline-flex items-center gap-1"
+                            onClick={header.column.getToggleSortingHandler()}
+                          >
+                            {flexRender(header.column.columnDef.header, header.getContext())}
+                          </button>
+                        ) : (
+                          flexRender(header.column.columnDef.header, header.getContext())
+                        )}
+                      </th>
+                    ))}
+                  </tr>
+                ))}
+              </thead>
+              <tbody className="divide-y divide-slate-200">
+                {table.getRowModel().rows.map((row) => (
+                  <tr
+                    key={row.id}
+                    className={`cursor-pointer transition hover:bg-slate-50 ${
+                      row.original.id === selectedApplication?.id ? "bg-slate-100" : ""
+                    }`}
+                    onClick={() => setSelectedApplicationId(row.original.id)}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <td key={cell.id} className="px-4 py-3 text-slate-700">
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div className="px-6 py-14 text-center">
+              <h3 className="text-lg font-semibold text-slate-900">
+                {tabFilter === "ACTIVE" ? "No active applications" : "No archived applications"}
+              </h3>
+              <p className="mt-2 text-sm text-slate-500">
+                {tabFilter === "ACTIVE"
+                  ? "Add your first application to start tracking."
+                  : "Archive applications to keep your active list clean."}
+              </p>
+              {tabFilter === "ACTIVE" ? (
+                <p className="mt-4 text-sm text-blue-700">Use the “New application” button above to get started.</p>
+              ) : null}
+            </div>
+          )}
         </div>
       </div>
 
@@ -335,10 +477,10 @@ export function ApplicationsTable({ applications }: { applications: ApplicationR
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-semibold uppercase text-slate-500">Events</label>
+              <label className="text-xs font-semibold uppercase text-slate-500">Activity</label>
               <div className="space-y-2 rounded-md border p-2">
                 <Input
-                  placeholder="Event type"
+                  placeholder="Activity type"
                   value={newEvent.type}
                   onChange={(event) => setNewEvent((current) => ({ ...current, type: event.target.value }))}
                 />
@@ -349,7 +491,7 @@ export function ApplicationsTable({ applications }: { applications: ApplicationR
                   onChange={(event) => setNewEvent((current) => ({ ...current, notes: event.target.value }))}
                 />
                 <Button type="button" size="sm" onClick={createEvent}>
-                  Add event
+                  Add activity
                 </Button>
               </div>
               <ul className="space-y-2">
@@ -372,7 +514,14 @@ export function ApplicationsTable({ applications }: { applications: ApplicationR
             {isSaving ? <p className="text-xs text-slate-500">Saving…</p> : null}
           </div>
         ) : (
-          <p>Select an application from the table.</p>
+          <div className="space-y-2">
+            <p className="text-sm text-slate-700">
+              Select an application from the table to view details.
+            </p>
+            <p className="text-xs text-slate-500">
+              Tip: use the actions menu on a row to archive or unarchive applications.
+            </p>
+          </div>
         )}
       </RightDrawer>
     </div>
