@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getServerUser } from "@/lib/supabase/get-server-user";
 
 type Params = {
   params: Promise<{ id: string }>;
@@ -13,10 +14,21 @@ type ApplicationPatchBody = {
   archived?: boolean;
 };
 
+async function requireUserId() {
+  const auth = await getServerUser();
+  return auth?.user.id ?? null;
+}
+
 export async function GET(_: Request, { params }: Params) {
+  const userId = await requireUserId();
+
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { id } = await params;
-  const application = await prisma.application.findUnique({
-    where: { id },
+  const application = await prisma.application.findFirst({
+    where: { id, ownerId: userId },
     include: { events: true, contact: true },
   });
 
@@ -28,10 +40,16 @@ export async function GET(_: Request, { params }: Params) {
 }
 
 export async function PATCH(request: Request, { params }: Params) {
+  const userId = await requireUserId();
+
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { id } = await params;
   const body = (await request.json()) as ApplicationPatchBody;
 
-  const current = await prisma.application.findUnique({ where: { id } });
+  const current = await prisma.application.findFirst({ where: { id, ownerId: userId } });
 
   if (!current) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -56,14 +74,15 @@ export async function PATCH(request: Request, { params }: Params) {
   if (statusChanged) {
     await prisma.event.create({
       data: {
+        ownerId: userId,
         applicationId: id,
         type: `Moved to ${body.status}`,
         eventAt: new Date(),
       },
     });
 
-    const refreshed = await prisma.application.findUnique({
-      where: { id },
+    const refreshed = await prisma.application.findFirst({
+      where: { id, ownerId: userId },
       include: { events: true },
     });
 
@@ -78,7 +97,19 @@ export async function PUT(request: Request, context: Params) {
 }
 
 export async function DELETE(_: Request, { params }: Params) {
+  const userId = await requireUserId();
+
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { id } = await params;
+  const existing = await prisma.application.findFirst({ where: { id, ownerId: userId } });
+
+  if (!existing) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
   await prisma.application.delete({ where: { id } });
   return new NextResponse(null, { status: 204 });
 }
