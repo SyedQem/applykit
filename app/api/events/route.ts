@@ -7,6 +7,12 @@ async function requireUserId() {
   return auth?.user.id ?? null;
 }
 
+function toValidDate(value: unknown): Date | null {
+  if (!value) return null;
+  const parsed = new Date(value as string | Date);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
 export async function GET() {
   const userId = await requireUserId();
 
@@ -29,10 +35,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await request.json();
+  let body: Record<string, unknown>;
+  try {
+    body = (await request.json()) as Record<string, unknown>;
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
 
-  if (!body.applicationId) {
+  if (typeof body.applicationId !== "string" || !body.applicationId.trim()) {
     return NextResponse.json({ error: "applicationId is required" }, { status: 400 });
+  }
+
+  if (typeof body.type !== "string" || !body.type.trim()) {
+    return NextResponse.json({ error: "type is required" }, { status: 400 });
+  }
+
+  const eventAt = toValidDate(body.eventAt);
+  if (body.eventAt && !eventAt) {
+    return NextResponse.json({ error: "eventAt must be a valid date" }, { status: 400 });
   }
 
   const application = await prisma.application.findFirst({
@@ -47,9 +67,9 @@ export async function POST(request: Request) {
   const event = await prisma.event.create({
     data: {
       ownerId: userId,
-      type: body.type,
-      eventAt: body.eventAt ? new Date(body.eventAt) : new Date(),
-      notes: body.notes,
+      type: body.type.trim(),
+      eventAt: eventAt ?? new Date(),
+      notes: typeof body.notes === "string" ? body.notes : null,
       applicationId: body.applicationId,
     },
   });

@@ -11,6 +11,12 @@ async function requireUserId() {
   return auth?.user.id ?? null;
 }
 
+function toValidDate(value: unknown): Date | null {
+  if (!value) return null;
+  const parsed = new Date(value as string | Date);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
 export async function GET(_: Request, { params }: Params) {
   const userId = await requireUserId();
 
@@ -32,14 +38,28 @@ export async function PUT(request: Request, { params }: Params) {
   }
 
   const { id } = await params;
-  const body = await request.json();
+  let body: Record<string, unknown>;
+  try {
+    body = (await request.json()) as Record<string, unknown>;
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  if ("type" in body && (typeof body.type !== "string" || !body.type.trim())) {
+    return NextResponse.json({ error: "type must be a non-empty string" }, { status: 400 });
+  }
+
+  const parsedEventAt = toValidDate(body.eventAt);
+  if (body.eventAt && !parsedEventAt) {
+    return NextResponse.json({ error: "eventAt must be a valid date" }, { status: 400 });
+  }
 
   const updateResult = await prisma.event.updateMany({
     where: { id, ownerId: userId },
     data: {
-      type: body.type,
-      eventAt: body.eventAt ? new Date(body.eventAt) : undefined,
-      notes: body.notes,
+      type: typeof body.type === "string" ? body.type.trim() : undefined,
+      eventAt: parsedEventAt ?? undefined,
+      notes: typeof body.notes === "string" ? body.notes : undefined,
     },
   });
 

@@ -19,6 +19,12 @@ async function requireUserId() {
   return auth?.user.id ?? null;
 }
 
+function toValidDate(value: unknown): Date | null {
+  if (!value) return null;
+  const parsed = new Date(value as string | Date);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
 export async function GET(_: Request, { params }: Params) {
   const userId = await requireUserId();
 
@@ -47,7 +53,33 @@ export async function PATCH(request: Request, { params }: Params) {
   }
 
   const { id } = await params;
-  const body = (await request.json()) as ApplicationPatchBody;
+  let body: ApplicationPatchBody;
+  try {
+    body = (await request.json()) as ApplicationPatchBody;
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  if ("status" in body && (typeof body.status !== "string" || !body.status.trim())) {
+    return NextResponse.json({ error: "status must be a non-empty string" }, { status: 400 });
+  }
+
+  if ("notes" in body && body.notes !== null && typeof body.notes !== "string") {
+    return NextResponse.json({ error: "notes must be a string or null" }, { status: 400 });
+  }
+
+  if ("link" in body && body.link !== null && typeof body.link !== "string") {
+    return NextResponse.json({ error: "link must be a string or null" }, { status: 400 });
+  }
+
+  const parsedAppliedAt = toValidDate(body.appliedAt);
+  if (body.appliedAt && !parsedAppliedAt) {
+    return NextResponse.json({ error: "appliedAt must be a valid date" }, { status: 400 });
+  }
+
+  if ("archived" in body && typeof body.archived !== "boolean") {
+    return NextResponse.json({ error: "archived must be a boolean" }, { status: 400 });
+  }
 
   const current = await prisma.application.findFirst({
     where: { id, ownerId: userId },
@@ -64,10 +96,10 @@ export async function PATCH(request: Request, { params }: Params) {
   const updateResult = await prisma.application.updateMany({
     where: { id, ownerId: userId },
     data: {
-      status: typeof body.status === "string" ? body.status : undefined,
+      status: typeof body.status === "string" ? body.status.trim() : undefined,
       notes: typeof body.notes === "string" ? body.notes : body.notes === null ? null : undefined,
       link: typeof body.link === "string" ? body.link : body.link === null ? null : undefined,
-      appliedAt: body.appliedAt ? new Date(body.appliedAt) : undefined,
+      appliedAt: parsedAppliedAt ?? undefined,
       archivedAt:
         typeof body.archived === "boolean" ? (body.archived ? new Date() : null) : undefined,
     },
