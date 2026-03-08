@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
+const DEVELOPMENT_OWNER_ID = "dev-owner";
 
 async function main() {
   await prisma.event.deleteMany();
@@ -27,6 +28,7 @@ async function main() {
 
   const app = await prisma.application.create({
     data: {
+      ownerId: DEVELOPMENT_OWNER_ID,
       company: "Acme Inc",
       role: "Software Engineer",
       status: "Interviewing",
@@ -38,8 +40,20 @@ async function main() {
 
   await prisma.event.createMany({
     data: [
-      { type: "Applied", eventAt: new Date(), applicationId: app.id, notes: "Applied through careers page" },
-      { type: "Phone Screen", eventAt: new Date(), applicationId: app.id, notes: "30-minute recruiter screen" }
+      {
+        ownerId: DEVELOPMENT_OWNER_ID,
+        type: "Applied",
+        eventAt: new Date(),
+        applicationId: app.id,
+        notes: "Applied through careers page"
+      },
+      {
+        ownerId: DEVELOPMENT_OWNER_ID,
+        type: "Phone Screen",
+        eventAt: new Date(),
+        applicationId: app.id,
+        notes: "30-minute recruiter screen"
+      }
     ]
   });
 }

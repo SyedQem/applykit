@@ -10,6 +10,7 @@ datasource db {
 
 model Application {
   id              String         @id @default(cuid())
+  ownerId         String
   company         String
   role            String
   status          String
@@ -24,6 +25,8 @@ model Application {
   contact         Contact?       @relation(fields: [contactId], references: [id])
   resumeVersion   ResumeVersion? @relation(fields: [resumeVersionId], references: [id])
   events          Event[]
+
+  @@index([ownerId])
 }
 
 model Contact {
@@ -39,6 +42,7 @@ model Contact {
 
 model Event {
   id            String      @id @default(cuid())
+  ownerId       String
   type          String
   eventAt       DateTime
   notes         String?
@@ -46,6 +50,9 @@ model Event {
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
   application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId])
+  @@index([applicationId, ownerId])
 }
 
 model ResumeVersion {
