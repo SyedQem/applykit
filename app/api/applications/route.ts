@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getServerUser } from "@/lib/supabase/get-server-user";
 
@@ -11,6 +12,19 @@ function toValidDate(value: unknown): Date | null {
   if (!value) return null;
   const parsed = new Date(value as string | Date);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function prismaErrorResponse(error: unknown, fallbackMessage: string) {
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    if (error.code === "P2003") {
+      return NextResponse.json(
+        { error: "Invalid relation reference (contactId or resumeVersionId)" },
+        { status: 400 },
+      );
+    }
+  }
+
+  return NextResponse.json({ error: fallbackMessage }, { status: 500 });
 }
 
 export async function GET() {
@@ -98,7 +112,7 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json(application, { status: 201 });
-  } catch {
-    return NextResponse.json({ error: "Failed to create application" }, { status: 500 });
+  } catch (error) {
+    return prismaErrorResponse(error, "Failed to create application");
   }
 }
