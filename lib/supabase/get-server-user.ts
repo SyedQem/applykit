@@ -4,6 +4,10 @@ import { createSupabaseServerClient } from './server';
 
 export async function getServerUser(): Promise<{ user: User } | null> {
   const supabase = await createSupabaseServerClient();
+  if (!supabase) {
+    return null;
+  }
+
   const {
     data: { user },
     error,

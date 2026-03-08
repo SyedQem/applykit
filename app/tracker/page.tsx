@@ -1,11 +1,19 @@
 import { prisma } from "@/lib/prisma";
 import { NewApplicationDialog } from "@/components/new-application-dialog";
 import { ApplicationsTable } from "@/components/applications-table";
+import { getServerUser } from "@/lib/supabase/get-server-user";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
 export default async function TrackerPage() {
+  const auth = await getServerUser();
+  if (!auth) {
+    redirect("/login");
+  }
+
   const applications = await prisma.application.findMany({
+    where: { ownerId: auth.user.id },
     orderBy: { appliedAt: "desc" },
     include: { events: true },
   });

@@ -1,9 +1,16 @@
 import { prisma } from "@/lib/prisma";
 import { Card } from "@/components/ui/card";
+import { getServerUser } from "@/lib/supabase/get-server-user";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
 export default async function ResumePage() {
+  const auth = await getServerUser();
+  if (!auth) {
+    redirect("/login");
+  }
+
   const resumeVersions = await prisma.resumeVersion.findMany({
     orderBy: { createdAt: "desc" }
   });
