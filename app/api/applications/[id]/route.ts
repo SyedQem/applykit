@@ -49,7 +49,10 @@ export async function PATCH(request: Request, { params }: Params) {
   const { id } = await params;
   const body = (await request.json()) as ApplicationPatchBody;
 
-  const current = await prisma.application.findFirst({ where: { id, ownerId: userId } });
+  const current = await prisma.application.findFirst({
+    where: { id, ownerId: userId },
+    select: { status: true },
+  });
 
   if (!current) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -58,8 +61,8 @@ export async function PATCH(request: Request, { params }: Params) {
   const statusChanged =
     typeof body.status === "string" && body.status.trim() && body.status !== current.status;
 
-  const updated = await prisma.application.update({
-    where: { id },
+  const updateResult = await prisma.application.updateMany({
+    where: { id, ownerId: userId },
     data: {
       status: typeof body.status === "string" ? body.status : undefined,
       notes: typeof body.notes === "string" ? body.notes : body.notes === null ? null : undefined,
@@ -68,8 +71,11 @@ export async function PATCH(request: Request, { params }: Params) {
       archivedAt:
         typeof body.archived === "boolean" ? (body.archived ? new Date() : null) : undefined,
     },
-    include: { events: true },
   });
+
+  if (updateResult.count === 0) {
+    return NextResponse.json({ error: "Ownership could not be established" }, { status: 403 });
+  }
 
   if (statusChanged) {
     await prisma.event.create({
@@ -89,6 +95,11 @@ export async function PATCH(request: Request, { params }: Params) {
     return NextResponse.json(refreshed);
   }
 
+  const updated = await prisma.application.findFirst({
+    where: { id, ownerId: userId },
+    include: { events: true },
+  });
+
   return NextResponse.json(updated);
 }
 
@@ -104,12 +115,11 @@ export async function DELETE(_: Request, { params }: Params) {
   }
 
   const { id } = await params;
-  const existing = await prisma.application.findFirst({ where: { id, ownerId: userId } });
+  const deleteResult = await prisma.application.deleteMany({ where: { id, ownerId: userId } });
 
-  if (!existing) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (deleteResult.count === 0) {
+    return NextResponse.json({ error: "Ownership could not be established" }, { status: 403 });
   }
 
-  await prisma.application.delete({ where: { id } });
   return new NextResponse(null, { status: 204 });
 }

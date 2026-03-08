@@ -32,15 +32,10 @@ export async function PUT(request: Request, { params }: Params) {
   }
 
   const { id } = await params;
-  const existing = await prisma.event.findFirst({ where: { id, ownerId: userId } });
-
-  if (!existing) {
-    return NextResponse.json({ error: "Ownership could not be established" }, { status: 403 });
-  }
-
   const body = await request.json();
-  const event = await prisma.event.update({
-    where: { id },
+
+  const updateResult = await prisma.event.updateMany({
+    where: { id, ownerId: userId },
     data: {
       type: body.type,
       eventAt: body.eventAt ? new Date(body.eventAt) : undefined,
@@ -48,6 +43,11 @@ export async function PUT(request: Request, { params }: Params) {
     },
   });
 
+  if (updateResult.count === 0) {
+    return NextResponse.json({ error: "Ownership could not be established" }, { status: 403 });
+  }
+
+  const event = await prisma.event.findFirst({ where: { id, ownerId: userId } });
   return NextResponse.json(event);
 }
 
@@ -59,12 +59,11 @@ export async function DELETE(_: Request, { params }: Params) {
   }
 
   const { id } = await params;
-  const existing = await prisma.event.findFirst({ where: { id, ownerId: userId } });
+  const deleteResult = await prisma.event.deleteMany({ where: { id, ownerId: userId } });
 
-  if (!existing) {
+  if (deleteResult.count === 0) {
     return NextResponse.json({ error: "Ownership could not be established" }, { status: 403 });
   }
 
-  await prisma.event.delete({ where: { id } });
   return new NextResponse(null, { status: 204 });
 }
