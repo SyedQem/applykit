@@ -1,5 +1,6 @@
 import { Search } from "lucide-react";
 
+import { LogoutButton } from "@/components/logout-button";
 import { NavLink } from "@/components/nav-link";
 import { Input } from "@/components/ui/input";
 
@@ -25,11 +26,12 @@ export default function DashboardLayout({
       </aside>
 
       <div className="flex min-h-screen flex-1 flex-col">
-        <header className="flex h-16 items-center border-b border-slate-200/80 bg-white/90 px-6">
+        <header className="flex h-16 items-center justify-between gap-4 border-b border-slate-200/80 bg-white/90 px-6">
           <div className="relative w-full max-w-md">
             <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-slate-500" />
             <Input className="pl-9" placeholder="Search applications, contacts, events..." />
           </div>
+          <LogoutButton />
         </header>
         <main className="flex flex-1">
           <section className="flex-1 p-6">{children}</section>
