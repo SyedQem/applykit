@@ -435,160 +435,247 @@ export function ApplicationsTable({ applications }: { applications: ApplicationR
       </div>
 
       <RightDrawer title="Application details">
-        {selectedApplication ? (
-          <div className="space-y-5">
-            <h3 className="text-base font-semibold text-white">
-              {selectedApplication.role} @ {selectedApplication.company}
-            </h3>
+  {selectedApplication ? (
+    <div className="space-y-5">
+      <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+        <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
+          Application
+        </p>
+        <h3 className="mt-2 text-lg font-semibold text-white">
+          {selectedApplication.role}
+        </h3>
+        <p className="mt-1 text-sm text-slate-400">
+          {selectedApplication.company}
+        </p>
 
-            <div className="space-y-2">
-              <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Status
-              </label>
-              <Select
-                value={toStatusKey(selectedApplication.status)}
-                onValueChange={(status) => saveApplication(selectedApplication.id, { status })}
-              >
-                <SelectTrigger className="border-white/10 bg-white/[0.04] text-slate-200">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="border-white/10 bg-slate-950 text-slate-200">
-                  {statusOptions.map((status) => (
-                    <SelectItem key={status} value={status}>
-                      {statusLabels[status]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <span
+            className={`status-chip ${
+              statusStyles[toStatusKey(selectedApplication.status)] ??
+              "bg-slate-800 text-slate-200"
+            }`}
+          >
+            {statusLabels[toStatusKey(selectedApplication.status)] ??
+              selectedApplication.status}
+          </span>
 
-            <div className="space-y-2">
-              <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Applied date
-              </label>
-              <Input
-                type="date"
-                className="border-white/10 bg-white/[0.04] text-slate-200"
-                value={new Date(selectedApplication.appliedAt).toISOString().slice(0, 10)}
-                onChange={(event) =>
-                  saveApplication(selectedApplication.id, { appliedAt: event.target.value })
-                }
-              />
-            </div>
+          <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-slate-400">
+            Applied {formatDate(selectedApplication.appliedAt)}
+          </span>
+        </div>
+      </section>
 
-            <div className="space-y-2">
-              <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Link
-              </label>
-              <Input
-                type="url"
-                className="border-white/10 bg-white/[0.04] text-slate-200 placeholder:text-slate-500"
-                value={selectedApplication.link ?? ""}
-                placeholder="https://..."
-                onBlur={(event) =>
-                  saveApplication(selectedApplication.id, {
-                    link: event.target.value || null,
-                  })
-                }
-                onChange={(event) => {
-                  const value = event.target.value;
-                  setData((current) =>
-                    current.map((item) =>
-                      item.id === selectedApplication.id ? { ...item, link: value } : item,
-                    ),
-                  );
-                }}
-              />
-            </div>
+      <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 space-y-4">
+        <div>
+          <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
+            Status & timeline
+          </p>
+        </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Notes
-              </label>
-              <Textarea
-                rows={5}
-                className="border-white/10 bg-white/[0.04] text-slate-200 placeholder:text-slate-500"
-                value={selectedApplication.notes ?? ""}
-                onBlur={(event) =>
-                  saveApplication(selectedApplication.id, {
-                    notes: event.target.value,
-                  })
-                }
-                onChange={(event) => {
-                  const value = event.target.value;
-                  setData((current) =>
-                    current.map((item) =>
-                      item.id === selectedApplication.id ? { ...item, notes: value } : item,
-                    ),
-                  );
-                }}
-              />
-            </div>
+        <div className="space-y-2">
+          <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Status
+          </label>
+          <Select
+            value={toStatusKey(selectedApplication.status)}
+            onValueChange={(status) => saveApplication(selectedApplication.id, { status })}
+          >
+            <SelectTrigger className="border-white/10 bg-white/[0.04] text-slate-200">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="border-white/10 bg-slate-950 text-slate-200">
+              {statusOptions.map((status) => (
+                <SelectItem key={status} value={status}>
+                  {statusLabels[status]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Activity
-              </label>
-              <div className="space-y-2 rounded-xl border border-white/10 bg-white/[0.03] p-3">
-                <Input
-                  className="border-white/10 bg-white/[0.04] text-slate-200 placeholder:text-slate-500"
-                  placeholder="Activity type"
-                  value={newEvent.type}
-                  onChange={(event) =>
-                    setNewEvent((current) => ({ ...current, type: event.target.value }))
-                  }
-                />
-                <Textarea
-                  rows={2}
-                  className="border-white/10 bg-white/[0.04] text-slate-200 placeholder:text-slate-500"
-                  placeholder="Notes"
-                  value={newEvent.notes}
-                  onChange={(event) =>
-                    setNewEvent((current) => ({ ...current, notes: event.target.value }))
-                  }
-                />
-                <Button
-                  type="button"
-                  size="sm"
-                  className="bg-white text-slate-950 hover:bg-slate-100"
-                  onClick={createEvent}
-                >
-                  Add activity
-                </Button>
-              </div>
+        <div className="space-y-2">
+          <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Applied date
+          </label>
+          <Input
+            type="date"
+            className="border-white/10 bg-white/[0.04] text-slate-200"
+            value={new Date(selectedApplication.appliedAt).toISOString().slice(0, 10)}
+            onChange={(event) =>
+              saveApplication(selectedApplication.id, { appliedAt: event.target.value })
+            }
+          />
+        </div>
+      </section>
 
-              <ul className="space-y-2">
-                {selectedApplication.events
-                  .slice()
-                  .sort(
-                    (left, right) =>
-                      new Date(right.eventAt).getTime() - new Date(left.eventAt).getTime(),
-                  )
-                  .map((eventItem) => (
-                    <li key={eventItem.id} className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
-                      <p className="font-medium text-slate-100">{eventItem.type}</p>
-                      <p className="text-xs text-slate-500">{formatDate(eventItem.eventAt)}</p>
-                      {eventItem.notes ? (
-                        <p className="mt-1 text-xs text-slate-300">{eventItem.notes}</p>
-                      ) : null}
-                    </li>
-                  ))}
-              </ul>
-            </div>
+      <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 space-y-4">
+        <div>
+          <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
+            Notes & links
+          </p>
+        </div>
 
-            {isSaving ? <p className="text-xs text-slate-500">Saving…</p> : null}
-          </div>
-        ) : (
-          <div className="space-y-2">
-            <p className="text-sm text-slate-300">
-              Select an application from the table to view details.
+        <div className="space-y-2">
+          <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Link
+          </label>
+          <Input
+            type="url"
+            className="border-white/10 bg-white/[0.04] text-slate-200 placeholder:text-slate-500"
+            value={selectedApplication.link ?? ""}
+            placeholder="https://..."
+            onBlur={(event) =>
+              saveApplication(selectedApplication.id, {
+                link: event.target.value || null,
+              })
+            }
+            onChange={(event) => {
+              const value = event.target.value;
+              setData((current) =>
+                current.map((item) =>
+                  item.id === selectedApplication.id ? { ...item, link: value } : item,
+                ),
+              );
+            }}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Notes
+          </label>
+          <Textarea
+            rows={5}
+            className="border-white/10 bg-white/[0.04] text-slate-200 placeholder:text-slate-500"
+            value={selectedApplication.notes ?? ""}
+            placeholder="Add useful context, recruiter info, prep notes, or reminders..."
+            onBlur={(event) =>
+              saveApplication(selectedApplication.id, {
+                notes: event.target.value,
+              })
+            }
+            onChange={(event) => {
+              const value = event.target.value;
+              setData((current) =>
+                current.map((item) =>
+                  item.id === selectedApplication.id ? { ...item, notes: value } : item,
+                ),
+              );
+            }}
+          />
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
+              Add activity
             </p>
-            <p className="text-xs text-slate-500">
-              Tip: use the actions menu on a row to archive or unarchive applications.
+            <p className="mt-1 text-xs text-slate-400">
+              Record interviews, follow-ups, outreach, or updates.
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Input
+            className="border-white/10 bg-white/[0.04] text-slate-200 placeholder:text-slate-500"
+            placeholder="Activity type"
+            value={newEvent.type}
+            onChange={(event) =>
+              setNewEvent((current) => ({ ...current, type: event.target.value }))
+            }
+          />
+          <Textarea
+            rows={3}
+            className="border-white/10 bg-white/[0.04] text-slate-200 placeholder:text-slate-500"
+            placeholder="Add context or notes"
+            value={newEvent.notes}
+            onChange={(event) =>
+              setNewEvent((current) => ({ ...current, notes: event.target.value }))
+            }
+          />
+          <Button
+            type="button"
+            size="sm"
+            className="bg-white text-slate-950 hover:bg-slate-100"
+            onClick={createEvent}
+          >
+            Add activity
+          </Button>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
+              Activity history
+            </p>
+            <p className="mt-1 text-xs text-slate-400">
+              Recent updates for this application.
+            </p>
+          </div>
+          <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] text-slate-400">
+            {selectedApplication.events.length} event
+            {selectedApplication.events.length === 1 ? "" : "s"}
+          </span>
+        </div>
+
+        {selectedApplication.events.length ? (
+          <ul className="space-y-3">
+            {selectedApplication.events
+              .slice()
+              .sort(
+                (left, right) =>
+                  new Date(right.eventAt).getTime() - new Date(left.eventAt).getTime(),
+              )
+              .map((eventItem) => (
+                <li
+                  key={eventItem.id}
+                  className="rounded-xl border border-white/10 bg-white/[0.04] p-3"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-medium text-slate-100">{eventItem.type}</p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {formatDate(eventItem.eventAt)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {eventItem.notes ? (
+                    <p className="mt-3 text-sm leading-6 text-slate-300">
+                      {eventItem.notes}
+                    </p>
+                  ) : null}
+                </li>
+              ))}
+          </ul>
+        ) : (
+          <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] px-4 py-6 text-center">
+            <p className="text-sm text-slate-300">No activity yet</p>
+            <p className="mt-1 text-xs text-slate-500">
+              Add your first event to start building a timeline.
             </p>
           </div>
         )}
-      </RightDrawer>
+      </section>
+
+      {isSaving ? <p className="text-xs text-slate-500">Saving…</p> : null}
+    </div>
+  ) : (
+    <div className="space-y-2">
+      <p className="text-sm text-slate-300">
+        Select an application from the table to view details.
+      </p>
+      <p className="text-xs text-slate-500">
+        Tip: use the actions menu on a row to archive or unarchive applications.
+      </p>
+    </div>
+  )}
+</RightDrawer>
     </div>
   );
 }
