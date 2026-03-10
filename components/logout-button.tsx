@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
@@ -8,28 +8,25 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export function LogoutButton() {
   const router = useRouter();
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const supabase = createSupabaseBrowserClient();
 
   async function handleLogout() {
-    setIsLoggingOut(true);
+    if (!supabase) return;
 
-    try {
-      const supabase = createSupabaseBrowserClient();
-      if (supabase) {
-        await supabase.auth.signOut();
-      }
-
-      await fetch("/api/auth/logout", { method: "POST" });
-      router.push("/login");
-      router.refresh();
-    } finally {
-      setIsLoggingOut(false);
-    }
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
   }
 
   return (
-    <Button type="button" variant="outline" onClick={handleLogout} disabled={isLoggingOut}>
-      {isLoggingOut ? "Logging out..." : "Log out"}
+    <Button
+      type="button"
+      variant="ghost"
+      onClick={handleLogout}
+      className="h-10 rounded-xl border border-white/10 bg-white/[0.05] px-4 text-slate-200 hover:bg-white/10 hover:text-white"
+    >
+      <LogOut className="mr-2 h-4 w-4" />
+      Logout
     </Button>
   );
 }

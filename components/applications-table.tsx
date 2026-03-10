@@ -10,6 +10,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { MoreHorizontal } from "lucide-react";
+
 import { RightDrawer } from "@/components/right-drawer";
 import { Button } from "@/components/ui/button";
 import {
@@ -94,15 +95,20 @@ function RowActionsMenu({ application, onToggleArchived }: RowActionsMenuProps) 
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8"
+          className="h-8 w-8 rounded-xl text-slate-400 hover:bg-white/10 hover:text-white"
           onClick={(event) => event.stopPropagation()}
         >
           <MoreHorizontal className="h-4 w-4" />
           <span className="sr-only">Open row actions</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" onClick={(event: React.MouseEvent) => event.stopPropagation()}>
+      <DropdownMenuContent
+        align="end"
+        onClick={(event: React.MouseEvent) => event.stopPropagation()}
+        className="border-white/10 bg-slate-950 text-slate-200"
+      >
         <DropdownMenuItem
+          className="cursor-pointer focus:bg-white/10 focus:text-white"
           onClick={(event: React.MouseEvent) => {
             event.stopPropagation();
             void onToggleArchived(application.id, nextArchivedValue);
@@ -129,14 +135,19 @@ export function ApplicationsTable({ applications }: { applications: ApplicationR
   const [newEvent, setNewEvent] = useState({ type: "", notes: "" });
 
   const dataWithLastActivity = useMemo<ApplicationViewRow[]>(
-    () => data.map((application) => ({ ...application, lastActivityAt: getLastActivityAt(application) })),
+    () =>
+      data.map((application) => ({
+        ...application,
+        lastActivityAt: getLastActivityAt(application),
+      })),
     [data],
   );
 
   const visibleRows = useMemo(
     () =>
       dataWithLastActivity.filter((application) => {
-        const matchesTab = tabFilter === "ACTIVE" ? application.archivedAt == null : application.archivedAt != null;
+        const matchesTab =
+          tabFilter === "ACTIVE" ? application.archivedAt == null : application.archivedAt != null;
         const matchesStatus =
           statusFilter === "ALL" ? true : toStatusKey(application.status) === statusFilter;
 
@@ -151,7 +162,10 @@ export function ApplicationsTable({ applications }: { applications: ApplicationR
       return;
     }
 
-    const hasSelectedVisibleRow = visibleRows.some((application) => application.id === selectedApplicationId);
+    const hasSelectedVisibleRow = visibleRows.some(
+      (application) => application.id === selectedApplicationId,
+    );
+
     if (!hasSelectedVisibleRow) {
       setSelectedApplicationId(visibleRows[0].id);
     }
@@ -165,6 +179,7 @@ export function ApplicationsTable({ applications }: { applications: ApplicationR
     payload: Partial<Pick<ApplicationRow, "status" | "notes" | "link" | "appliedAt">>,
   ) {
     setIsSaving(true);
+
     try {
       const response = await fetch(`/api/applications/${applicationId}`, {
         method: "PATCH",
@@ -222,6 +237,7 @@ export function ApplicationsTable({ applications }: { applications: ApplicationR
         item.id === selectedApplication.id ? { ...item, events: [created, ...item.events] } : item,
       ),
     );
+
     setNewEvent({ type: "", notes: "" });
   }
 
@@ -230,19 +246,21 @@ export function ApplicationsTable({ applications }: { applications: ApplicationR
       {
         accessorKey: "company",
         header: "Company",
-        cell: ({ row }) => <span className="font-medium text-slate-900">{row.original.company}</span>,
+        cell: ({ row }) => <span className="font-medium text-white">{row.original.company}</span>,
       },
       {
         accessorKey: "role",
         header: "Role",
+        cell: ({ row }) => <span className="text-slate-200">{row.original.role}</span>,
       },
       {
         accessorKey: "status",
         header: "Status",
         cell: ({ row }) => {
           const statusKey = toStatusKey(row.original.status);
+
           return (
-            <span className={`status-chip ${statusStyles[statusKey] ?? "bg-slate-100 text-slate-700"}`}>
+            <span className={`status-chip ${statusStyles[statusKey] ?? "bg-slate-800 text-slate-200"}`}>
               {statusLabels[statusKey] ?? row.original.status}
             </span>
           );
@@ -252,13 +270,13 @@ export function ApplicationsTable({ applications }: { applications: ApplicationR
         accessorKey: "appliedAt",
         header: "Applied Date",
         sortingFn: "datetime",
-        cell: ({ row }) => formatDate(row.original.appliedAt),
+        cell: ({ row }) => <span className="text-slate-300">{formatDate(row.original.appliedAt)}</span>,
       },
       {
         accessorKey: "lastActivityAt",
         header: "Last activity",
         sortingFn: "datetime",
-        cell: ({ row }) => formatDate(row.original.lastActivityAt),
+        cell: ({ row }) => <span className="text-slate-300">{formatDate(row.original.lastActivityAt)}</span>,
       },
       {
         accessorKey: "link",
@@ -268,7 +286,7 @@ export function ApplicationsTable({ applications }: { applications: ApplicationR
           row.original.link ? (
             <a
               href={row.original.link}
-              className="text-blue-600 underline"
+              className="text-blue-300 underline underline-offset-4 hover:text-blue-200"
               target="_blank"
               rel="noreferrer"
               onClick={(event) => event.stopPropagation()}
@@ -276,14 +294,16 @@ export function ApplicationsTable({ applications }: { applications: ApplicationR
               Open
             </a>
           ) : (
-            <span className="text-slate-400">—</span>
+            <span className="text-slate-500">—</span>
           ),
       },
       {
         id: "actions",
         header: "",
         enableSorting: false,
-        cell: ({ row }) => <RowActionsMenu application={row.original} onToggleArchived={toggleArchive} />,
+        cell: ({ row }) => (
+          <RowActionsMenu application={row.original} onToggleArchived={toggleArchive} />
+        ),
       },
     ],
     [],
@@ -302,11 +322,16 @@ export function ApplicationsTable({ applications }: { applications: ApplicationR
     <div className="flex gap-6">
       <div className="flex-1 space-y-4">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="inline-flex rounded-md border border-slate-200 bg-slate-50 p-1">
+          <div className="inline-flex rounded-xl border border-white/10 bg-white/[0.04] p-1 backdrop-blur">
             <Button
               type="button"
               size="sm"
-              variant={tabFilter === "ACTIVE" ? "default" : "ghost"}
+              variant="ghost"
+              className={
+                tabFilter === "ACTIVE"
+                  ? "rounded-lg bg-white text-slate-950 hover:bg-white"
+                  : "rounded-lg text-slate-300 hover:bg-white/10 hover:text-white"
+              }
               onClick={() => setTabFilter("ACTIVE")}
             >
               Active
@@ -314,7 +339,12 @@ export function ApplicationsTable({ applications }: { applications: ApplicationR
             <Button
               type="button"
               size="sm"
-              variant={tabFilter === "ARCHIVED" ? "default" : "ghost"}
+              variant="ghost"
+              className={
+                tabFilter === "ARCHIVED"
+                  ? "rounded-lg bg-white text-slate-950 hover:bg-white"
+                  : "rounded-lg text-slate-300 hover:bg-white/10 hover:text-white"
+              }
               onClick={() => setTabFilter("ARCHIVED")}
             >
               Archived
@@ -322,10 +352,10 @@ export function ApplicationsTable({ applications }: { applications: ApplicationR
           </div>
 
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-56">
+            <SelectTrigger className="w-56 border-white/10 bg-white/[0.04] text-slate-200">
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="border-white/10 bg-slate-950 text-slate-200">
               <SelectItem value="ALL">All statuses</SelectItem>
               {statusOptions.map((status) => (
                 <SelectItem key={status} value={status}>
@@ -336,18 +366,21 @@ export function ApplicationsTable({ applications }: { applications: ApplicationR
           </Select>
         </div>
 
-        <div className="overflow-hidden rounded-xl border bg-white">
+        <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] shadow-lg shadow-black/10 backdrop-blur-xl">
           {visibleRows.length ? (
-            <table className="min-w-full divide-y divide-slate-200 text-sm">
-              <thead className="bg-slate-50">
+            <table className="min-w-full text-sm">
+              <thead className="border-b border-white/10 bg-white/[0.03]">
                 {table.getHeaderGroups().map((headerGroup) => (
                   <tr key={headerGroup.id}>
                     {headerGroup.headers.map((header) => (
-                      <th key={header.id} className="px-4 py-3 text-left font-semibold text-slate-700">
+                      <th
+                        key={header.id}
+                        className="px-4 py-3 text-left font-semibold text-slate-300"
+                      >
                         {header.isPlaceholder ? null : header.column.getCanSort() ? (
                           <button
                             type="button"
-                            className="inline-flex items-center gap-1"
+                            className="inline-flex items-center gap-1 transition hover:text-white"
                             onClick={header.column.getToggleSortingHandler()}
                           >
                             {flexRender(header.column.columnDef.header, header.getContext())}
@@ -360,17 +393,20 @@ export function ApplicationsTable({ applications }: { applications: ApplicationR
                   </tr>
                 ))}
               </thead>
-              <tbody className="divide-y divide-slate-200">
+
+              <tbody className="divide-y divide-white/10">
                 {table.getRowModel().rows.map((row) => (
                   <tr
                     key={row.id}
-                    className={`cursor-pointer transition hover:bg-slate-50 ${
-                      row.original.id === selectedApplication?.id ? "bg-slate-100" : ""
+                    className={`cursor-pointer transition ${
+                      row.original.id === selectedApplication?.id
+                        ? "bg-white/[0.08]"
+                        : "hover:bg-white/[0.04]"
                     }`}
                     onClick={() => setSelectedApplicationId(row.original.id)}
                   >
                     {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id} className="px-4 py-3 text-slate-700">
+                      <td key={cell.id} className="px-4 py-3 text-slate-300">
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>
                     ))}
@@ -380,16 +416,18 @@ export function ApplicationsTable({ applications }: { applications: ApplicationR
             </table>
           ) : (
             <div className="px-6 py-14 text-center">
-              <h3 className="text-lg font-semibold text-slate-900">
+              <h3 className="text-lg font-semibold text-white">
                 {tabFilter === "ACTIVE" ? "No active applications" : "No archived applications"}
               </h3>
-              <p className="mt-2 text-sm text-slate-500">
+              <p className="mt-2 text-sm text-slate-400">
                 {tabFilter === "ACTIVE"
                   ? "Add your first application to start tracking."
                   : "Archive applications to keep your active list clean."}
               </p>
               {tabFilter === "ACTIVE" ? (
-                <p className="mt-4 text-sm text-blue-700">Use the “New application” button above to get started.</p>
+                <p className="mt-4 text-sm text-blue-300">
+                  Use the “New application” button above to get started.
+                </p>
               ) : null}
             </div>
           )}
@@ -398,21 +436,23 @@ export function ApplicationsTable({ applications }: { applications: ApplicationR
 
       <RightDrawer title="Application details">
         {selectedApplication ? (
-          <div className="space-y-4">
-            <h3 className="text-base font-semibold text-slate-900">
+          <div className="space-y-5">
+            <h3 className="text-base font-semibold text-white">
               {selectedApplication.role} @ {selectedApplication.company}
             </h3>
 
             <div className="space-y-2">
-              <label className="text-xs font-semibold uppercase text-slate-500">Status</label>
+              <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Status
+              </label>
               <Select
                 value={toStatusKey(selectedApplication.status)}
                 onValueChange={(status) => saveApplication(selectedApplication.id, { status })}
               >
-                <SelectTrigger>
+                <SelectTrigger className="border-white/10 bg-white/[0.04] text-slate-200">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="border-white/10 bg-slate-950 text-slate-200">
                   {statusOptions.map((status) => (
                     <SelectItem key={status} value={status}>
                       {statusLabels[status]}
@@ -423,9 +463,12 @@ export function ApplicationsTable({ applications }: { applications: ApplicationR
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-semibold uppercase text-slate-500">Applied date</label>
+              <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Applied date
+              </label>
               <Input
                 type="date"
+                className="border-white/10 bg-white/[0.04] text-slate-200"
                 value={new Date(selectedApplication.appliedAt).toISOString().slice(0, 10)}
                 onChange={(event) =>
                   saveApplication(selectedApplication.id, { appliedAt: event.target.value })
@@ -434,9 +477,12 @@ export function ApplicationsTable({ applications }: { applications: ApplicationR
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-semibold uppercase text-slate-500">Link</label>
+              <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Link
+              </label>
               <Input
                 type="url"
+                className="border-white/10 bg-white/[0.04] text-slate-200 placeholder:text-slate-500"
                 value={selectedApplication.link ?? ""}
                 placeholder="https://..."
                 onBlur={(event) =>
@@ -456,9 +502,12 @@ export function ApplicationsTable({ applications }: { applications: ApplicationR
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-semibold uppercase text-slate-500">Notes</label>
+              <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Notes
+              </label>
               <Textarea
                 rows={5}
+                className="border-white/10 bg-white/[0.04] text-slate-200 placeholder:text-slate-500"
                 value={selectedApplication.notes ?? ""}
                 onBlur={(event) =>
                   saveApplication(selectedApplication.id, {
@@ -477,23 +526,37 @@ export function ApplicationsTable({ applications }: { applications: ApplicationR
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-semibold uppercase text-slate-500">Activity</label>
-              <div className="space-y-2 rounded-md border p-2">
+              <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Activity
+              </label>
+              <div className="space-y-2 rounded-xl border border-white/10 bg-white/[0.03] p-3">
                 <Input
+                  className="border-white/10 bg-white/[0.04] text-slate-200 placeholder:text-slate-500"
                   placeholder="Activity type"
                   value={newEvent.type}
-                  onChange={(event) => setNewEvent((current) => ({ ...current, type: event.target.value }))}
+                  onChange={(event) =>
+                    setNewEvent((current) => ({ ...current, type: event.target.value }))
+                  }
                 />
                 <Textarea
                   rows={2}
+                  className="border-white/10 bg-white/[0.04] text-slate-200 placeholder:text-slate-500"
                   placeholder="Notes"
                   value={newEvent.notes}
-                  onChange={(event) => setNewEvent((current) => ({ ...current, notes: event.target.value }))}
+                  onChange={(event) =>
+                    setNewEvent((current) => ({ ...current, notes: event.target.value }))
+                  }
                 />
-                <Button type="button" size="sm" onClick={createEvent}>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="bg-white text-slate-950 hover:bg-slate-100"
+                  onClick={createEvent}
+                >
                   Add activity
                 </Button>
               </div>
+
               <ul className="space-y-2">
                 {selectedApplication.events
                   .slice()
@@ -502,10 +565,12 @@ export function ApplicationsTable({ applications }: { applications: ApplicationR
                       new Date(right.eventAt).getTime() - new Date(left.eventAt).getTime(),
                   )
                   .map((eventItem) => (
-                    <li key={eventItem.id} className="rounded-md border p-2">
-                      <p className="font-medium text-slate-800">{eventItem.type}</p>
+                    <li key={eventItem.id} className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                      <p className="font-medium text-slate-100">{eventItem.type}</p>
                       <p className="text-xs text-slate-500">{formatDate(eventItem.eventAt)}</p>
-                      {eventItem.notes ? <p className="mt-1 text-xs">{eventItem.notes}</p> : null}
+                      {eventItem.notes ? (
+                        <p className="mt-1 text-xs text-slate-300">{eventItem.notes}</p>
+                      ) : null}
                     </li>
                   ))}
               </ul>
@@ -515,7 +580,7 @@ export function ApplicationsTable({ applications }: { applications: ApplicationR
           </div>
         ) : (
           <div className="space-y-2">
-            <p className="text-sm text-slate-700">
+            <p className="text-sm text-slate-300">
               Select an application from the table to view details.
             </p>
             <p className="text-xs text-slate-500">
